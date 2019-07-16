@@ -37,7 +37,7 @@ def process_tracking(mode):
                 labelout=''
                 for idx in lines:
                     #if idx[0]=='None':
-                    print(s,l)
+                    #print(s,l)
                     idx=idx.strip('\n').split(' ')
                     cls=int(idx[0]) #original_class_dic.get(int(idx[0]))
                     xmid=float(idx[1])
@@ -112,7 +112,7 @@ def process_object(mode):
         classfile.write(combine_class_dic[k]+'\n')
     classfile.close()
 
-process_object('object')
+#process_object('object')
 process_tracking('tracking')
 
 
