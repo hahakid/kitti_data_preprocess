@@ -11,7 +11,7 @@ obj_test_dir=['calib','image_2','velodyne']
 
 #tracking_seq='0000' #train: 0000-0020, test: 0000-0028
 show_flag=True # visualize
-tracking_train_seq=1 #20 #20
+tracking_train_seq=20 #20 #20
 tracking_test_seq=28
 #original
 original_class_dic = {'Car': 0, 'Van': 1, 'Truck': 2, 'Pedestrian': 3, 'Person_sitting': 4, 'Cyclist': 5, 'Tram': 6}
@@ -108,7 +108,7 @@ def verify_object(path,mode='training'):
             file.close()
 
             for o in old:
-                print(o)
+                #print(o)
                 o=o.strip('\n').split(' ')
                 xmin = int(float(o[4]))
                 ymin = int(float(o[5]))
@@ -199,7 +199,7 @@ def process_object(impath,velopath,labelpath,calibpath,savepath):
             #print(l)
             cls=l[0]
             coolusion=l[2] # 0 = visible, 1 = partly occluded, 2 = fully occluded, 3 = unknown
-            if cls!='DontCare':
+            if cls!='DontCare' and cls!='Misc' and (coolusion=='0' or coolusion=='1'):
                 angle=float(l[3])
                 #xmin = int(float(l[4]))
                 #xmax = int(float(l[5]))
@@ -211,7 +211,9 @@ def process_object(impath,velopath,labelpath,calibpath,savepath):
                 height = str(abs(float(l[7]) - float(l[5])) / h)
                 coord=xmid+' '+ymid+' '+width+' '+height
                 #print(coord)
-                f_new_label.write(str(original_class_dic.get(l[0]))+' '+coord+'\n')
+                #f_new_label.write(str(original_class_dic.get(l[0]))+' '+coord+'\n') # 6 classes
+                f_new_label.write(str(original_class_dic.get(l[0])) + ' ' + coord + '\n') #3 classes
+
         f_new_label.close()
 
 def process(impath,oxtspath,velopath,labelpath,calibpath,savepath):
@@ -225,8 +227,8 @@ def process(impath,oxtspath,velopath,labelpath,calibpath,savepath):
     velolist=os.listdir(velopath)
     labellist=load_tracking_label(labelpath)
     #print(len(imglist),len(velolist),len(labellist))
-    #iter according to image list
-    for idx in range(0,tframe):
+    #iter according to image list, create empty files
+    for idx in range(0,tframe): #
         output_label(savepath, str(idx).zfill(6), None, None)
     # iter according to label list for non-empty labels
     for idx in labellist:#range(0,tframe):
@@ -260,7 +262,8 @@ def output_label(savepath,img_id,llist,size):
                 coord=transcoord(l,size)
                 #print(original_class_dic.get(l[0]),coord) # 0=car 1=people
                 #print(combine_class_dic.get(l[0]), coord) # 0=car 1=people 2=cyclist
-                f.write(str(original_class_dic.get(l[0]))+' '+coord+'\n')
+                #f.write(str(original_class_dic.get(l[0]))+' '+coord+'\n')# 6 classes
+                f.write(str(combine_class_dic.get(l[0]))+' '+coord+'\n') #3 classes
         f.close()
         #'''
 
@@ -268,6 +271,7 @@ def output_label(savepath,img_id,llist,size):
 def load_oxts(path):
     assert os.path.exists(path)
     imu=utils.load_oxts_packets_and_poses(path)
+
 
 def load_object_label(path):
     assert os.path.exists(path)
@@ -277,7 +281,9 @@ def load_object_label(path):
         current = []
         for line in f.readlines():
             line=line.split(' ')
-            if line[1]=='-1' and line[2]=='DontCare':
+            if line[1]=='-1' and line[2]=='DontCare':# ignored objects
+                continue
+            if line[4]=='2' or line[4]=='3': #0 = visible, 1 = partly occluded, 2 = fully occluded, 3 = unknown
                 continue
             #print(line)
             frame_id=line[0]
@@ -312,8 +318,11 @@ def load_tracking_label(path):
         current = []
         for line in f.readlines():
             line=line.split(' ')
-            if line[1]=='-1' and line[2]=='DontCare':
+            if line[2]=='DontCare' or line[2]=='Misc': #remove ignored objects
                 continue
+            if line[4]=='2' or line[4]=='3': #remove occlude objects
+                continue
+
             #print(line)
             frame_id=line[0]
             cal = line[2]
@@ -395,9 +404,11 @@ def load_calib(path):
     return data
 
 # generate labels
+
 tracking_data(os.path.join(filedir,model[1]))
+
 #verify labels
 #verify_tracking(os.path.join(filedir,model[1]))
 
-object_data(os.path.join(filedir,model[0]))
+#object_data(os.path.join(filedir,model[0]))
 #verify_object(os.path.join(filedir,model[0]))
